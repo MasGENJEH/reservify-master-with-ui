@@ -1,81 +1,159 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { DoorOpen, Plus, X } from 'lucide-react';
 import apiClient from '../api/client';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import PageHeader from '../components/ui/PageHeader';
+import SearchInput from '../components/ui/SearchInput';
+import ActionButtons from '../components/ui/ActionButtons';
 
-const Rooms = () => {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function Rooms({ rooms, setRooms, onRefresh }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ name: '', room_type: '', capacity: '', status: 'available' });
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchRooms();
-  }, []);
+  const [filters, setFilters] = useState({ name: '', room_type: '', status: '' });
 
-  const fetchRooms = async () => {
+  const filteredItems = rooms.filter(r => {
+    const matchesGlobal = r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          r.room_type.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesName = filters.name === '' || r.name.toLowerCase().includes(filters.name.toLowerCase());
+    const matchesType = filters.room_type === '' || r.room_type.toLowerCase().includes(filters.room_type.toLowerCase());
+    const matchesStatus = filters.status === '' || r.status?.toLowerCase().includes(filters.status.toLowerCase());
+    return matchesGlobal && matchesName && matchesType && matchesStatus;
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
     try {
-      const response = await apiClient.get('/rooms');
-      setRooms(response.data?.data || []);
+      await apiClient.post('/rooms', {
+        name: formData.name,
+        room_type: formData.room_type,
+        capacity: parseInt(formData.capacity) || 0,
+        status: formData.status
+      });
+      setShowModal(false);
+      setFormData({ name: '', room_type: '', capacity: '', status: 'available' });
+      onRefresh();
     } catch (error) {
-      console.error('Error fetching rooms:', error);
+      alert('Failed to add room: ' + (error.response?.data?.message || error.message));
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="page-content">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-        <div>
-          <h2>Rooms Management</h2>
-          <p>Manage all available rooms and their statuses.</p>
-        </div>
-        <button className="btn btn-primary">
-          <Plus size={18} /> Add Room
-        </button>
+    <div className="flex flex-col gap-6 flex-1 rounded-3xl p-6 bg-white border border-monday-border shadow-sm">
+      <PageHeader 
+        title="Manage Rooms"
+        description={`Manage all booking rooms. Total: ${rooms.length} rooms registered.`}
+        icon={DoorOpen}
+        actionLabel="Add Room"
+        actionIcon={Plus}
+        onActionClick={() => setShowModal(true)}
+      />
+
+      <div className="flex items-center justify-between">
+        <SearchInput 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search rooms..."
+        />
       </div>
 
-      <div className="glass-panel table-container">
-        <table className="table">
+      <div className="border border-monday-border rounded-2xl overflow-x-auto overflow-y-hidden bg-white">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Capacity</th>
-              <th>Status</th>
-              <th>Actions</th>
+            <tr className="bg-monday-gray-background border-b border-monday-border text-xs font-bold uppercase tracking-wider text-monday-gray">
+              <th className="py-4 px-6">No</th>
+              <th className="py-4 px-6">Name</th>
+              <th className="py-4 px-6">Type</th>
+              <th className="py-4 px-6">Capacity</th>
+              <th className="py-4 px-6">Status</th>
+              <th className="py-4 px-6 text-right">Actions</th>
+            </tr>
+            <tr className="bg-monday-background/50 border-b border-monday-border">
+              <th className="py-2 px-6"></th>
+              <th className="py-2 px-6">
+                <input type="text" placeholder="Filter..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-monday-border focus:outline-none focus:border-monday-blue font-normal normal-case tracking-normal text-monday-black placeholder:text-monday-gray/50 bg-white" value={filters.name} onChange={e => setFilters({...filters, name: e.target.value})} />
+              </th>
+              <th className="py-2 px-6">
+                <input type="text" placeholder="Filter..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-monday-border focus:outline-none focus:border-monday-blue font-normal normal-case tracking-normal text-monday-black placeholder:text-monday-gray/50 bg-white" value={filters.room_type} onChange={e => setFilters({...filters, room_type: e.target.value})} />
+              </th>
+              <th className="py-2 px-6"></th>
+              <th className="py-2 px-6">
+                <input type="text" placeholder="Filter..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-monday-border focus:outline-none focus:border-monday-blue font-normal normal-case tracking-normal text-monday-black placeholder:text-monday-gray/50 bg-white" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})} />
+              </th>
+              <th className="py-2 px-6">
+                <button onClick={() => setFilters({ name: '', room_type: '', status: '' })} className="w-full px-2.5 py-1.5 text-[11px] font-bold text-monday-gray hover:text-monday-red hover:bg-monday-red/10 rounded-lg transition-all flex items-center justify-center gap-1 normal-case tracking-normal cursor-pointer">Reset</button>
+              </th>
             </tr>
           </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan="6" style={{ textAlign: 'center' }}>Loading data...</td></tr>
-            ) : rooms.length === 0 ? (
-              <tr><td colSpan="6" style={{ textAlign: 'center' }}>No rooms found</td></tr>
-            ) : (
-              rooms.map((room) => (
-                <tr key={room.id}>
-                  <td>{room.id.substring(0, 8)}...</td>
-                  <td><strong>{room.name}</strong></td>
-                  <td>{room.room_type}</td>
-                  <td>{room.capacity} Pax</td>
-                  <td>
-                    <span className={`badge ${room.status === 'Available' ? 'badge-success' : 'badge-warning'}`}>
-                      {room.status || 'Unknown'}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn" style={{ padding: '0.25rem', color: 'var(--accent-color)' }}><Edit2 size={16} /></button>
-                      <button className="btn" style={{ padding: '0.25rem', color: 'var(--danger-color)' }}><Trash2 size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+          <tbody className="divide-y divide-monday-border text-sm text-monday-black">
+            {filteredItems.map((room, index) => (
+              <tr key={room.id} className="hover:bg-monday-gray-background/30 transition-colors">
+                <td className="py-3.5 px-6 text-monday-gray font-mono font-semibold">{index + 1}</td>
+                <td className="py-3.5 px-6 font-bold text-monday-blue">{room.name}</td>
+                <td className="py-3.5 px-6 font-semibold">{room.room_type}</td>
+                <td className="py-3.5 px-6">{room.capacity} Pax</td>
+                <td className="py-3.5 px-6">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${room.status === 'available' ? 'bg-emerald-100 text-emerald-700' : room.status === 'booked' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                    {room.status}
+                  </span>
+                </td>
+                <td className="py-3.5 px-6 text-right">
+                  <ActionButtons onEdit={() => {}} onDelete={() => {}} />
+                </td>
+              </tr>
+            ))}
+            {filteredItems.length === 0 && (
+              <tr><td colSpan="6" className="py-8 text-center text-monday-gray font-semibold">No rooms found</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Add Room Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#292D32B2] backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white rounded-3xl border border-monday-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-monday-border">
+              <h3 className="font-extrabold text-lg text-monday-black">Add New Room</h3>
+              <button onClick={() => setShowModal(false)} className="p-1 text-monday-gray hover:text-monday-black hover:bg-monday-gray-background rounded-lg transition-300 cursor-pointer">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-monday-gray uppercase tracking-wider block">Room Name</label>
+                <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-monday-border rounded-xl text-sm focus:outline-none focus:border-monday-black font-semibold text-monday-black" placeholder="e.g. Meeting Room A" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-monday-gray uppercase tracking-wider block">Room Type</label>
+                <input type="text" required value={formData.room_type} onChange={e => setFormData({...formData, room_type: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-monday-border rounded-xl text-sm focus:outline-none focus:border-monday-black font-semibold text-monday-black" placeholder="e.g. Meeting, Conference" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-monday-gray uppercase tracking-wider block">Capacity (Pax)</label>
+                <input type="number" required min="1" value={formData.capacity} onChange={e => setFormData({...formData, capacity: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-monday-border rounded-xl text-sm focus:outline-none focus:border-monday-black font-semibold text-monday-black" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-monday-gray uppercase tracking-wider block">Status</label>
+                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-monday-border rounded-xl text-sm focus:outline-none focus:border-monday-black font-semibold text-monday-black">
+                  <option value="available">Available</option>
+                  <option value="booked">Booked</option>
+                  <option value="unavailable">Unavailable</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-monday-border">
+                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-bold text-monday-gray hover:bg-monday-gray-background rounded-full transition-300 cursor-pointer">Cancel</button>
+                <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-monday-blue text-white rounded-full font-bold text-sm hover:bg-opacity-90 transition-300 cursor-pointer disabled:opacity-50">
+                  {submitting ? 'Saving...' : 'Save Room'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default Rooms;
+}
