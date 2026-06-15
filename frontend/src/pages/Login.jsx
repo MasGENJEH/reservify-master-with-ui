@@ -17,7 +17,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post('/employees', {
+      const response = await apiClient.post('/auth/login', {
         username,
         password
       });
