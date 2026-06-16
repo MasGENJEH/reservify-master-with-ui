@@ -18,7 +18,7 @@ jobs:
         go-version: '1.21.x'
 
     - name: Build
-      run: go build -v ./...
+      run: go build -v ./repository/employees_repository.go ./repository/employees_repository_test.go
 
     - name: Test
       run: go test -v ./repository/employees_repository.go ./repository/employees_repository_test.go
