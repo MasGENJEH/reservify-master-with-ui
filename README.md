@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Before running the Resevify application, make sure you have fulfilled the following prerequisites:
+Before running the Resevify application, make sure you have fulfilled the following prerequisite:
 
 - Go (Golang) is installed on your system.
 - PostgreSQL is installed, and you have created the tables as specified in the `ddl.sql` file. Then, insert the table contents from the `dml.sql` file as dummy data.
