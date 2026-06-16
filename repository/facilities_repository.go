@@ -14,6 +14,7 @@ type FasilitiesRepository interface {
 	Create(payload entity.Facilities) (entity.Facilities, error)
 	GetById(id string) (entity.Facilities, error)
 	UpdateById(payload entity.Facilities) (entity.Facilities, error)
+	Delete(id string) error
 }
 
 type fasilitiesRepository struct {
@@ -129,6 +130,17 @@ func (f *fasilitiesRepository) UpdateById(payload entity.Facilities) (entity.Fac
 	fasilities.Quantity = payload.Quantity
 
 	return fasilities, nil
+}
+
+
+
+func (f *fasilitiesRepository) Delete(id string) error {
+	_, err := f.db.Exec(config.DeleteFasilities, id)
+	if err != nil {
+		log.Println("fasilitiesRepository.Delete:", err.Error())
+		return err
+	}
+	return nil
 }
 
 func NewFasilitesRepository(db *sql.DB) FasilitiesRepository {

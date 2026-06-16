@@ -1,12 +1,12 @@
 import React from 'react';
 import { DoorOpen, Settings, Users, ClipboardList, ArrowRight } from 'lucide-react';
 
-export default function Dashboard({ rooms, facilities, employees, transactions, setActiveTab }) {
+export default function Dashboard({ rooms, totals, setActiveTab }) {
   const metrics = [
-    { label: 'Total Rooms', value: rooms.length, icon: DoorOpen, color: 'monday-blue', tab: 'rooms' },
-    { label: 'Total Facilities', value: facilities.length, icon: Settings, color: 'monday-lime-green', tab: 'facilities' },
-    { label: 'Total Employees', value: employees.length, icon: Users, color: 'monday-blue', tab: 'employees' },
-    { label: 'Total Transactions', value: transactions.length, icon: ClipboardList, color: 'monday-red', tab: 'transactions' },
+    { label: 'Total Rooms', value: totals.rooms, icon: DoorOpen, color: 'monday-blue', tab: 'rooms' },
+    { label: 'Total Facilities', value: totals.facilities, icon: Settings, color: 'monday-lime-green', tab: 'facilities' },
+    { label: 'Total Employees', value: totals.employees, icon: Users, color: 'monday-blue', tab: 'employees' },
+    { label: 'Total Transactions', value: totals.transactions, icon: ClipboardList, color: 'monday-red', tab: 'transactions' },
   ];
 
   return (

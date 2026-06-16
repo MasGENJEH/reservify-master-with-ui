@@ -36,6 +36,11 @@ func (r *RoomRepoMock) Update(payload entity.Room) (entity.Room, error) {
 	return args.Get(0).(entity.Room), args.Error(1)
 }
 
+func (r *RoomRepoMock) Delete(id string) error {
+	args := r.Called(id)
+	return args.Error(0)
+}
+
 func (r *RoomRepoMock) UpdateStatus(payload entity.Room) (entity.Room, error) {
 	args := r.Called(payload)
 	return args.Get(0).(entity.Room), args.Error(1)

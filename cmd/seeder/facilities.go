@@ -3,38 +3,42 @@ package main
 import (
 	"database/sql"
 	"log"
+
+	"github.com/brianvoe/gofakeit/v6"
 )
 
 func seedFacilities(db *sql.DB) []string {
 	log.Println("Seeding Facilities...")
 
-	facilities := []struct {
-		Name     string
-		Quantity int
-	}{
-		{"Projector", 5},
-		{"Whiteboard", 10},
-		{"Speaker System", 3},
-		{"Video Conference Cam", 4},
-		{"HDMI Cable", 20},
-		{"Air Conditioner", 15},
-		{"Office Chair", 50},
-		{"Meeting Table", 10},
-		{"Water Dispenser", 5},
-		{"Coffee Machine", 2},
-	}
-
 	var insertedIds []string
-	for _, fac := range facilities {
+
+	// Ensure some standard facilities
+	standardFacs := []string{"Projector", "Whiteboard", "TV Monitor", "Sound System", "Video Conference Kit"}
+	for _, fName := range standardFacs {
 		var id string
 		err := db.QueryRow(`
 			INSERT INTO facilities(name, quantity, updated_at) 
 			VALUES($1, $2, CURRENT_TIMESTAMP) 
 			RETURNING id;
-		`, fac.Name, fac.Quantity).Scan(&id)
+		`, fName, gofakeit.Number(1, 20)).Scan(&id)
+		if err == nil {
+			insertedIds = append(insertedIds, id)
+		}
+	}
+
+	for i := 0; i < 1000; i++ {
+		name := gofakeit.Noun() + " " + gofakeit.Color()
+		quantity := gofakeit.Number(1, 50)
+
+		var id string
+		err := db.QueryRow(`
+			INSERT INTO facilities(name, quantity, updated_at) 
+			VALUES($1, $2, CURRENT_TIMESTAMP) 
+			RETURNING id;
+		`, name, quantity).Scan(&id)
 
 		if err != nil {
-			log.Printf("Warning: Failed to insert facility %s: %v", fac.Name, err)
+			log.Printf("Warning: Failed to insert facility %s: %v", name, err)
 		} else {
 			insertedIds = append(insertedIds, id)
 		}

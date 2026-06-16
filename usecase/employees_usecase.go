@@ -15,6 +15,7 @@ type EmployeesUseCase interface {
 	RegisterNewEmployee(payload entity.Employee) (entity.Employee, error)
 	UpdateEmployee(payload entity.Employee) (entity.Employee, error)
 	ListAll(page, size int) ([]entity.Employee, model.Paging, error)
+	DeleteEmployee(id string) error
 }
 
 type employeesUseCase struct {
@@ -77,6 +78,13 @@ func (e *employeesUseCase) UpdateEmployee(payload entity.Employee) (entity.Emplo
 		return entity.Employee{}, fmt.Errorf("oppps, failed to save data employee :%v", err.Error())
 	}
 	return employee, nil
+}
+
+func (e *employeesUseCase) DeleteEmployee(id string) error {
+	if id == "" {
+		return errors.New("id harus diisi")
+	}
+	return e.repo.DeleteEmployee(id)
 }
 
 func NewEmployeeUseCase(repo repository.EmployeeRepository) EmployeesUseCase {

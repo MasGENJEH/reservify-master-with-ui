@@ -43,3 +43,8 @@ func (e *EmployeeUseCaseMock) ListAll(page, size int) ([]entity.Employee, model.
 	args := e.Called(page, size)
 	return args.Get(0).([]entity.Employee), args.Get(1).(model.Paging), args.Error(2)
 }
+
+func (e *EmployeeUseCaseMock) DeleteEmployee(id string) error {
+	args := e.Called(id)
+	return args.Error(0)
+}

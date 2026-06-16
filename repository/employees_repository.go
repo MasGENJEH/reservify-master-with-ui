@@ -17,6 +17,7 @@ type EmployeeRepository interface {
 	CreateEmployee(payload entity.Employee) (entity.Employee, error)
 	UpdateEmployee(payload entity.Employee) (entity.Employee, error)
 	List(page, size int) ([]entity.Employee, model.Paging, error)
+	DeleteEmployee(id string) error
 }
 
 type employeeRepository struct {
@@ -184,6 +185,15 @@ func (e *employeeRepository) List(page, size int) ([]entity.Employee, model.Pagi
 		TotalPages:  int(math.Ceil(float64(totalRows) / float64(size))),
 	}
 	return employees, paging, nil
+}
+
+func (e *employeeRepository) DeleteEmployee(id string) error {
+	_, err := e.db.Exec(config.DeleteEmployee, id)
+	if err != nil {
+		log.Println("employeeRepository.DeleteEmployee:", err.Error())
+		return err
+	}
+	return nil
 }
 
 func NewEmployeeRepository(db *sql.DB) EmployeeRepository {

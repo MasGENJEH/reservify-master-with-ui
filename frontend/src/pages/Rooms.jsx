@@ -4,41 +4,105 @@ import apiClient from '../api/client';
 import PageHeader from '../components/ui/PageHeader';
 import SearchInput from '../components/ui/SearchInput';
 import ActionButtons from '../components/ui/ActionButtons';
+import Pagination from '../components/ui/Pagination';
 
-export default function Rooms({ rooms, setRooms, onRefresh }) {
+export default function Rooms() {
+  const [data, setData] = useState([]);
+  const [paging, setPaging] = useState({ totalRows: 0, totalPages: 1 });
+  const [loading, setLoading] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', room_type: '', capacity: '', status: 'available' });
+  const [editMode, setEditMode] = useState(false);
+  const [currentId, setCurrentId] = useState(null);
+  const [formData, setFormData] = useState({ name: '', room_type: 'Meeting', capacity: '', status: 'available' });
   const [submitting, setSubmitting] = useState(false);
-
   const [filters, setFilters] = useState({ name: '', room_type: '', status: '' });
 
-  const filteredItems = rooms.filter(r => {
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get(`/rooms?page=${currentPage}&size=${itemsPerPage}${filters.status ? `&status=${filters.status}` : ''}`);
+      setData(res.data?.data || []);
+      if (res.data?.paging) {
+        setPaging(res.data.paging);
+      }
+    } catch (error) {
+      console.error('Failed to fetch rooms:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, [currentPage, filters.status]);
+
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.status]);
+
+  // Local filtering for search query and other fields not supported by backend
+  const currentItems = data.filter(r => {
     const matchesGlobal = r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           r.room_type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesName = filters.name === '' || r.name.toLowerCase().includes(filters.name.toLowerCase());
     const matchesType = filters.room_type === '' || r.room_type.toLowerCase().includes(filters.room_type.toLowerCase());
-    const matchesStatus = filters.status === '' || r.status?.toLowerCase().includes(filters.status.toLowerCase());
-    return matchesGlobal && matchesName && matchesType && matchesStatus;
+    return matchesGlobal && matchesName && matchesType;
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await apiClient.post('/rooms', {
-        name: formData.name,
-        room_type: formData.room_type,
-        capacity: parseInt(formData.capacity) || 0,
-        status: formData.status
-      });
+      if (editMode) {
+        await apiClient.put('/rooms', {
+          id: currentId,
+          name: formData.name,
+          room_type: formData.room_type,
+          capacity: parseInt(formData.capacity) || 0,
+          status: formData.status
+        });
+      } else {
+        await apiClient.post('/rooms', {
+          name: formData.name,
+          room_type: formData.room_type,
+          capacity: parseInt(formData.capacity) || 0,
+          status: formData.status
+        });
+      }
       setShowModal(false);
-      setFormData({ name: '', room_type: '', capacity: '', status: 'available' });
-      onRefresh();
+      setFormData({ name: '', room_type: 'Meeting', capacity: '', status: 'available' });
+      setEditMode(false);
+      setCurrentId(null);
+      fetchData();
     } catch (error) {
-      alert('Failed to add room: ' + (error.response?.data?.message || error.message));
+      alert('Failed to save room: ' + (error.response?.data?.message || error.message));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (room) => {
+    setFormData({ name: room.name, room_type: room.room_type, capacity: room.capacity.toString(), status: room.status });
+    setCurrentId(room.id);
+    setEditMode(true);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this room?')) {
+      try {
+        await apiClient.delete(`/rooms/${id}`);
+        fetchData();
+      } catch (error) {
+        alert('Failed to delete room: ' + (error.response?.data?.message || error.message));
+      }
     }
   };
 
@@ -46,11 +110,16 @@ export default function Rooms({ rooms, setRooms, onRefresh }) {
     <div className="flex flex-col gap-6 flex-1 rounded-3xl p-6 bg-white border border-monday-border shadow-sm">
       <PageHeader 
         title="Manage Rooms"
-        description={`Manage all booking rooms. Total: ${rooms.length} rooms registered.`}
+        description={`Manage all booking rooms.`}
         icon={DoorOpen}
         actionLabel="Add Room"
         actionIcon={Plus}
-        onActionClick={() => setShowModal(true)}
+        onActionClick={() => {
+          setEditMode(false);
+          setCurrentId(null);
+          setFormData({ name: '', room_type: '', capacity: '', status: 'available' });
+          setShowModal(true);
+        }}
       />
 
       <div className="flex items-center justify-between">
@@ -61,6 +130,9 @@ export default function Rooms({ rooms, setRooms, onRefresh }) {
         />
       </div>
 
+      {loading ? (
+        <div className="py-20 text-center text-monday-gray font-semibold">Loading rooms...</div>
+      ) : (
       <div className="border border-monday-border rounded-2xl overflow-x-auto overflow-y-hidden bg-white">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -90,9 +162,9 @@ export default function Rooms({ rooms, setRooms, onRefresh }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-monday-border text-sm text-monday-black">
-            {filteredItems.map((room, index) => (
+            {currentItems.map((room, index) => (
               <tr key={room.id} className="hover:bg-monday-gray-background/30 transition-colors">
-                <td className="py-3.5 px-6 text-monday-gray font-mono font-semibold">{index + 1}</td>
+                <td className="py-3.5 px-6 text-monday-gray font-mono font-semibold">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                 <td className="py-3.5 px-6 font-bold text-monday-blue">{room.name}</td>
                 <td className="py-3.5 px-6 font-semibold">{room.room_type}</td>
                 <td className="py-3.5 px-6">{room.capacity} Pax</td>
@@ -102,23 +174,33 @@ export default function Rooms({ rooms, setRooms, onRefresh }) {
                   </span>
                 </td>
                 <td className="py-3.5 px-6 text-right">
-                  <ActionButtons onEdit={() => {}} onDelete={() => {}} />
+                  <ActionButtons onEdit={() => handleEdit(room)} onDelete={() => handleDelete(room.id)} />
                 </td>
               </tr>
             ))}
-            {filteredItems.length === 0 && (
+            {currentItems.length === 0 && (
               <tr><td colSpan="6" className="py-8 text-center text-monday-gray font-semibold">No rooms found</td></tr>
             )}
           </tbody>
         </table>
+        {paging.totalRows > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={paging.totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={paging.totalRows}
+            itemsPerPage={itemsPerPage}
+          />
+        )}
       </div>
+      )}
 
       {/* Add Room Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#292D32B2] backdrop-blur-sm">
           <div className="w-full max-w-lg bg-white rounded-3xl border border-monday-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-monday-border">
-              <h3 className="font-extrabold text-lg text-monday-black">Add New Room</h3>
+              <h3 className="font-extrabold text-lg text-monday-black">{editMode ? 'Edit Room' : 'Add New Room'}</h3>
               <button onClick={() => setShowModal(false)} className="p-1 text-monday-gray hover:text-monday-black hover:bg-monday-gray-background rounded-lg transition-300 cursor-pointer">
                 <X size={20} />
               </button>

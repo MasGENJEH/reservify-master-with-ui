@@ -41,3 +41,8 @@ func (e *EmployeeRepoMock) List(page, size int) ([]entity.Employee, model.Paging
 	args := e.Called(page, size)
 	return args.Get(0).([]entity.Employee), args.Get(1).(model.Paging), args.Error(2)
 }
+
+func (e *EmployeeRepoMock) DeleteEmployee(id string) error {
+	args := e.Called(id)
+	return args.Error(0)
+}

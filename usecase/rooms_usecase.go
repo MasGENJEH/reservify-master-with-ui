@@ -15,6 +15,7 @@ type RoomUseCase interface {
 	FindAllRoomStatus(status string, page, size int) ([]entity.Room, model.Paging, error)
 	UpdateRoomDetail(payload entity.Room) (entity.Room, error)
 	UpdateRoomStatus(payload entity.Room) (entity.Room, error)
+	DeleteRoom(id string) error
 }
 
 type roomUseCase struct {
@@ -90,6 +91,13 @@ func (r *roomUseCase) UpdateRoomStatus(payload entity.Room) (entity.Room, error)
 		return entity.Room{}, fmt.Errorf("failed to update room with ID %s: %v", payload.ID, err.Error())
 	}
 	return room, nil
+}
+
+func (r *roomUseCase) DeleteRoom(id string) error {
+	if id == "" {
+		return fmt.Errorf("id harus diisi")
+	}
+	return r.repo.Delete(id)
 }
 
 func NewRoomUseCase(repo repository.RoomRepository) RoomUseCase {

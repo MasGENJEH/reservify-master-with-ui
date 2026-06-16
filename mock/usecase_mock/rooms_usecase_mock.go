@@ -40,3 +40,8 @@ func (r *RoomUseCaseMock) UpdateRoomStatus(payload entity.Room) (entity.Room, er
 	args := r.Called(payload)
 	return args.Get(0).(entity.Room), args.Error(1)
 }
+
+func (r *RoomUseCaseMock) DeleteRoom(id string) error {
+	args := r.Called(id)
+	return args.Error(0)
+}

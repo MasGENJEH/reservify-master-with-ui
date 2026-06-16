@@ -31,12 +31,14 @@ const (
 	UpdateRoomStatus      = `UPDATE rooms SET status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING name, room_type, capacity, created_at, updated_at`
 	SelectCountRoom       = `SELECT COUNT(*) FROM rooms`
 	SelectCountRoomStatus = `SELECT COUNT(*) FROM rooms WHERE status = $1`
+	DeleteRoom            = `DELETE FROM rooms WHERE id = $1`
 
 	InsertFasilities     = `INSERT INTO facilities (name, quantity) VALUES ($1, $2) RETURNING id, created_at, updated_at`
 	SelectFasilitiesList = `SELECT id, name, quantity, created_at, updated_at FROM facilities ORDER BY created_at DESC LIMIT $1 OFFSET $2`
 	SelectFasilitiesById = `SELECT id, name, quantity, created_at, updated_at FROM facilities WHERE id = $1`
 	UpdateFasilities     = `UPDATE facilities SET name = $1, quantity = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING created_at, updated_at`
 	TotalRowsFasilities  = `SELECT COUNT(*) FROM facilities`
+	DeleteFasilities     = `DELETE FROM facilities WHERE id = $1`
 
 	// Employee
 	// done
@@ -49,6 +51,7 @@ const (
 	// done
 
 	UpdateEmployee = `UPDATE employees SET name = $1, username = $2, password = crypt($3, password), role = $4, division = $5, position = $6, contact = $7, updated_at = CURRENT_TIMESTAMP WHERE id = $8 RETURNING created_at, updated_at`
+	DeleteEmployee = `DELETE FROM employees WHERE id = $1`
 
 	SelectReportList             = `SELECT t.id, t.employee_id, e.name, e.username, e.division, e.position, e.contact, t.room_id, r.name, r.room_type, r.capacity, t.description, t.status, t.start_time, t.end_time, t.created_at, t.updated_at FROM transactions t JOIN employees e on e.id = t.employee_id JOIN rooms r on r.id = t.room_id WHERE t.created_at BETWEEN $1 AND $2 ORDER BY created_at DESC`
 	SelectReportFacilityByRoomID = `SELECT t.facility_id, f.name, t.quantity FROM trx_room_facility t JOIN facilities f ON t.facility_id = f.id WHERE t.room_id = $1`

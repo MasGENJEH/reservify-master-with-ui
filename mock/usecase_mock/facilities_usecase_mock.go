@@ -27,3 +27,8 @@ func (m *FacilitiesUseCaseMock) EditFacilities(payload entity.Facilities) (entit
 	args := m.Called(payload)
 	return args.Get(0).(entity.Facilities), args.Error(1)
 }
+
+func (m *FacilitiesUseCaseMock) DeleteFacility(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}

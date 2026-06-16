@@ -12,6 +12,7 @@ type FacilitiesUseCase interface {
 	RegisterNewFacilities(payload entity.Facilities) (entity.Facilities, error)
 	FindFacilitiesById(id string) (entity.Facilities, error)
 	EditFacilities(payload entity.Facilities) (entity.Facilities, error)
+	DeleteFacility(id string) error
 }
 
 type facilitiesUseCase struct {
@@ -55,6 +56,13 @@ func (f *facilitiesUseCase) EditFacilities(payload entity.Facilities) (entity.Fa
 	}
 
 	return facility, nil
+}
+
+func (f *facilitiesUseCase) DeleteFacility(id string) error {
+	if id == "" {
+		return fmt.Errorf("id harus diisi")
+	}
+	return f.repo.Delete(id)
 }
 
 func NewFacilitiesUseCase(repo repository.FasilitiesRepository) FacilitiesUseCase {

@@ -4,15 +4,52 @@ import apiClient from '../api/client';
 import PageHeader from '../components/ui/PageHeader';
 import SearchInput from '../components/ui/SearchInput';
 import ActionButtons from '../components/ui/ActionButtons';
+import Pagination from '../components/ui/Pagination';
 
-export default function Transactions({ transactions, setTransactions, rooms, employees, onRefresh }) {
+export default function Transactions() {
+  const [data, setData] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [paging, setPaging] = useState({ totalRows: 0, totalPages: 1 });
+  const [loading, setLoading] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ employee_id: '', room_id: '', description: '', start_time: '', end_time: '' });
   const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ description: '', status: '' });
 
-  const filteredItems = (transactions || []).filter(t => {
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [trxRes, roomsRes, empRes] = await Promise.all([
+        apiClient.get(`/transactions?page=${currentPage}&size=${itemsPerPage}`),
+        apiClient.get('/rooms?page=1&size=1000'),
+        apiClient.get('/employees?page=1&size=1000')
+      ]);
+      setData(trxRes.data?.data || []);
+      setRooms(roomsRes.data?.data || []);
+      setEmployees(empRes.data?.data || []);
+      if (trxRes.data?.paging) {
+        setPaging(trxRes.data.paging);
+      }
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, [currentPage]);
+
+  // Local filtering for search query
+  const currentItems = data.filter(t => {
     const matchesGlobal = (t.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDesc = filters.description === '' || (t.description || '').toLowerCase().includes(filters.description.toLowerCase());
     const matchesStatus = filters.status === '' || (t.status || '').toLowerCase().includes(filters.status.toLowerCase());
@@ -32,7 +69,7 @@ export default function Transactions({ transactions, setTransactions, rooms, emp
       });
       setShowModal(false);
       setFormData({ employee_id: '', room_id: '', description: '', start_time: '', end_time: '' });
-      onRefresh();
+      fetchData();
     } catch (error) {
       alert('Failed to create transaction: ' + (error.response?.data?.message || error.message));
     } finally {
@@ -52,7 +89,7 @@ export default function Transactions({ transactions, setTransactions, rooms, emp
     <div className="flex flex-col gap-6 flex-1 rounded-3xl p-6 bg-white border border-monday-border shadow-sm">
       <PageHeader 
         title="Manage Transactions"
-        description={`Manage all room booking transactions. Total: ${(transactions || []).length} transactions.`}
+        description={`Manage all room booking transactions.`}
         icon={ClipboardList}
         actionLabel="New Booking"
         actionIcon={Plus}
@@ -63,6 +100,9 @@ export default function Transactions({ transactions, setTransactions, rooms, emp
         <SearchInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search transactions..." />
       </div>
 
+      {loading ? (
+        <div className="py-20 text-center text-monday-gray font-semibold">Loading transactions...</div>
+      ) : (
       <div className="border border-monday-border rounded-2xl overflow-x-auto overflow-y-hidden bg-white">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -90,9 +130,9 @@ export default function Transactions({ transactions, setTransactions, rooms, emp
             </tr>
           </thead>
           <tbody className="divide-y divide-monday-border text-sm text-monday-black">
-            {filteredItems.map((trx, index) => (
+            {currentItems.map((trx, index) => (
               <tr key={trx.id} className="hover:bg-monday-gray-background/30 transition-colors">
-                <td className="py-3.5 px-6 text-monday-gray font-mono font-semibold">{index + 1}</td>
+                <td className="py-3.5 px-6 text-monday-gray font-mono font-semibold">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                 <td className="py-3.5 px-6 font-semibold">{trx.description || '-'}</td>
                 <td className="py-3.5 px-6">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(trx.status)}`}>
@@ -106,12 +146,22 @@ export default function Transactions({ transactions, setTransactions, rooms, emp
                 </td>
               </tr>
             ))}
-            {filteredItems.length === 0 && (
+            {currentItems.length === 0 && (
               <tr><td colSpan="6" className="py-8 text-center text-monday-gray font-semibold">No transactions found</td></tr>
             )}
           </tbody>
         </table>
+        {paging.totalRows > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={paging.totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={paging.totalRows}
+            itemsPerPage={itemsPerPage}
+          />
+        )}
       </div>
+      )}
 
       {/* New Booking Modal */}
       {showModal && (

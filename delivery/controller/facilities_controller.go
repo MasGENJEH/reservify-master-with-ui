@@ -77,11 +77,22 @@ func (f *FacilitiesController) createHandler(ctx *gin.Context) {
 	common.SendCreateResponse(ctx, facility, "Created")
 }
 
+func (f *FacilitiesController) deleteHandler(ctx *gin.Context) {
+	id := ctx.Param("id")
+	err := f.facilitiesUC.DeleteFacility(id)
+	if err != nil {
+		common.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	common.SendSingleResponse(ctx, nil, "Deleted Successfully")
+}
+
 func (f *FacilitiesController) Route() {
 	f.rg.POST(config.FacilitiesCreate, f.authMiddleware.RequireToken("admin"), f.createHandler)
 	f.rg.GET(config.FacilitiesList, f.authMiddleware.RequireToken("admin", "employee", "ga"), f.listHandler)
 	f.rg.GET(config.FacilitiesGetById, f.authMiddleware.RequireToken("admin", "employee", "ga"), f.getHandler)
 	f.rg.PUT(config.FacilitiesUpdate, f.authMiddleware.RequireToken("admin"), f.updateHandler)
+	f.rg.DELETE(config.FacilitiesDelete, f.authMiddleware.RequireToken("admin"), f.deleteHandler)
 }
 
 func NewFacilitiesController(facilitiesUC usecase.FacilitiesUseCase, rg *gin.RouterGroup, authMiddleware middleware.AuthMiddleware) *FacilitiesController {

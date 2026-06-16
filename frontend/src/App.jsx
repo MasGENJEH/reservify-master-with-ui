@@ -11,7 +11,10 @@ import Transactions from './pages/Transactions';
 import apiClient from './api/client';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const path = window.location.pathname.replace('/', '');
+    return ['rooms', 'facilities', 'employees', 'transactions'].includes(path) ? path : 'dashboard';
+  });
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,10 +27,8 @@ export default function App() {
   });
 
   // Data states
-  const [rooms, setRooms] = useState([]);
-  const [facilities, setFacilities] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [transactions, setTransactions] = useState([]);
+  const [recentRooms, setRecentRooms] = useState([]);
+  const [totals, setTotals] = useState({ rooms: 0, facilities: 0, employees: 0, transactions: 0 });
 
   // Login handler
   const handleLoginSuccess = (newToken, loggedInUser) => {
@@ -44,24 +45,27 @@ export default function App() {
     localStorage.removeItem('user');
     setToken('');
     setUser(null);
-    setRooms([]);
-    setFacilities([]);
-    setEmployees([]);
-    setTransactions([]);
+    setRecentRooms([]);
+    setTotals({ rooms: 0, facilities: 0, employees: 0, transactions: 0 });
   };
 
   // Fetch all data
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [roomsRes, facilitiesRes, employeesRes] = await Promise.all([
-        apiClient.get('/rooms').catch(() => ({ data: { data: [] } })),
-        apiClient.get('/facilities').catch(() => ({ data: { data: [] } })),
-        apiClient.get('/employees').catch(() => ({ data: { data: [] } })),
+      const [roomsRes, facilitiesRes, employeesRes, transactionsRes] = await Promise.all([
+        apiClient.get('/rooms?page=1&size=5').catch(() => ({ data: { data: [], paging: { totalRows: 0 } } })),
+        apiClient.get('/facilities?page=1&size=1').catch(() => ({ data: { paging: { totalRows: 0 } } })),
+        apiClient.get('/employees?page=1&size=1').catch(() => ({ data: { paging: { totalRows: 0 } } })),
+        apiClient.get('/transactions?page=1&size=1').catch(() => ({ data: { paging: { totalRows: 0 } } })),
       ]);
-      setRooms(roomsRes.data?.data || []);
-      setFacilities(facilitiesRes.data?.data || []);
-      setEmployees(employeesRes.data?.data || []);
+      setRecentRooms(roomsRes.data?.data || []);
+      setTotals({
+        rooms: roomsRes.data?.paging?.totalRows || 0,
+        facilities: facilitiesRes.data?.paging?.totalRows || 0,
+        employees: employeesRes.data?.paging?.totalRows || 0,
+        transactions: transactionsRes.data?.paging?.totalRows || 0,
+      });
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -72,11 +76,15 @@ export default function App() {
   useEffect(() => {
     if (user && token) {
       fetchData();
+      window.history.replaceState(null, '', `/${activeTab === 'dashboard' ? '' : activeTab}`);
     }
-  }, [user, token]);
+  }, [activeTab, user, token]);
 
   // Not logged in
   if (!user || !token) {
+    if (window.location.pathname !== '/login') {
+      window.history.replaceState(null, '', '/login');
+    }
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
@@ -84,17 +92,17 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard rooms={rooms} facilities={facilities} employees={employees} transactions={transactions} setActiveTab={setActiveTab} />;
+        return <Dashboard rooms={recentRooms} totals={totals} setActiveTab={setActiveTab} />;
       case 'rooms':
-        return <Rooms rooms={rooms} setRooms={setRooms} onRefresh={fetchData} />;
+        return <Rooms />;
       case 'facilities':
-        return <Facilities facilities={facilities} setFacilities={setFacilities} onRefresh={fetchData} />;
+        return <Facilities />;
       case 'employees':
-        return <Employees employees={employees} setEmployees={setEmployees} onRefresh={fetchData} />;
+        return <Employees />;
       case 'transactions':
-        return <Transactions transactions={transactions} setTransactions={setTransactions} rooms={rooms} employees={employees} onRefresh={fetchData} />;
+        return <Transactions />;
       default:
-        return <Dashboard rooms={rooms} facilities={facilities} employees={employees} transactions={transactions} setActiveTab={setActiveTab} />;
+        return <Dashboard rooms={recentRooms} totals={totals} setActiveTab={setActiveTab} />;
     }
   };
 

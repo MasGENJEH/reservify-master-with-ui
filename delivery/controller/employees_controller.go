@@ -94,6 +94,16 @@ func (e *EmployeeController) ListHandler(ctx *gin.Context) {
 	common.SendPagedResponse(ctx, response, paging, "Ok")
 }
 
+func (e *EmployeeController) deleteHandler(ctx *gin.Context) {
+	id := ctx.Param("id")
+	err := e.employeeUC.DeleteEmployee(id)
+	if err != nil {
+		common.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	common.SendSingleResponse(ctx, nil, "Deleted Successfully")
+}
+
 // route
 func (e *EmployeeController) Route() {
 	e.rg.GET(config.EmployeesGetById, e.authMiddleware.RequireToken("admin", "employee", "ga"), e.getByIdHandler)
@@ -101,6 +111,7 @@ func (e *EmployeeController) Route() {
 	e.rg.POST(config.EmployeesCreate, e.authMiddleware.RequireToken("admin"), e.createHandler)
 	e.rg.PUT(config.EmployeesUpdate, e.authMiddleware.RequireToken("admin"), e.putHandler)
 	e.rg.GET(config.EmployeesList, e.authMiddleware.RequireToken("admin", "employee", "ga"), e.ListHandler)
+	e.rg.DELETE(config.EmployeesDelete, e.authMiddleware.RequireToken("admin"), e.deleteHandler)
 }
 
 func NewEmployeeController(employeeUC usecase.EmployeesUseCase, rg *gin.RouterGroup, authMiddleware middleware.AuthMiddleware) *EmployeeController {

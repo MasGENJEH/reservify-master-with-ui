@@ -17,6 +17,7 @@ type RoomRepository interface {
 	ListStatus(status string, page, size int) ([]entity.Room, model.Paging, error)
 	Update(payload entity.Room) (entity.Room, error)
 	UpdateStatus(payload entity.Room) (entity.Room, error)
+	Delete(id string) error
 }
 
 type roomRepository struct {
@@ -168,6 +169,15 @@ func (r *roomRepository) UpdateStatus(payload entity.Room) (entity.Room, error) 
 // get by room by ID (ALL ROLE) -GET
 // update room status (GA & ADMIN) -PUT
 // update room (ADMIN) -PUT
+
+func (r *roomRepository) Delete(id string) error {
+	_, err := r.db.Exec(config.DeleteRoom, id)
+	if err != nil {
+		log.Println("roomRepository.Delete:", err.Error())
+		return err
+	}
+	return nil
+}
 
 func NewRoomRepository(db *sql.DB) RoomRepository {
 	return &roomRepository{db: db}

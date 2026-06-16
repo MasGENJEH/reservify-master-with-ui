@@ -109,12 +109,23 @@ func (r *RoomController) updateStatusHandler(c *gin.Context) {
 	common.SendCreateResponse(c, room, "Ok")
 }
 
+func (r *RoomController) deleteHandler(c *gin.Context) {
+	id := c.Param("id")
+	err := r.roomUC.DeleteRoom(id)
+	if err != nil {
+		common.SendErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	common.SendSingleResponse(c, nil, "Deleted Successfully")
+}
+
 func (r *RoomController) Route() {
 	r.rg.POST(config.RoomCreate, r.authMiddleware.RequireToken("admin"), r.createHandler)
 	r.rg.GET(config.RoomList, r.authMiddleware.RequireToken("employee", "admin", "ga"), r.listHandler)
 	r.rg.GET(config.RoomGetById, r.authMiddleware.RequireToken("employee", "admin", "ga"), r.getHandler)
 	r.rg.PUT(config.RoomUpdate, r.authMiddleware.RequireToken("admin"), r.updateDetailHandler)
 	r.rg.PUT(config.RoomUpdateStatus, r.authMiddleware.RequireToken("admin", "ga"), r.updateStatusHandler)
+	r.rg.DELETE(config.RoomDelete, r.authMiddleware.RequireToken("admin"), r.deleteHandler)
 }
 
 func NewRoomController(roomUC usecase.RoomUseCase, authMiddleware middleware.AuthMiddleware, rg *gin.RouterGroup) *RoomController {

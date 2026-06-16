@@ -27,3 +27,8 @@ func (m *FacilitiesRepoMock) UpdateById(payload entity.Facilities) (entity.Facil
 	args := m.Called(payload)
 	return args.Get(0).(entity.Facilities), args.Error(1)
 }
+
+func (m *FacilitiesRepoMock) Delete(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
