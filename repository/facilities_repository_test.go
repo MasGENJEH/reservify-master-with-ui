@@ -115,9 +115,10 @@ func (suite *FasilitiesRepositoryTestSuite) TestUpdate_Fail() {
 func (suite *FasilitiesRepositoryTestSuite) TestList_Success() {
 	page := 1
 	size := 10
+	now := time.Now()
 	expectedFacility := []entity.Facilities{
-		{ID: "1", Name: "Facility1", Quantity: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "2", Name: "Facility2", Quantity: 15, CreatedAt: time.Now(), UpdatedAt: time.Now()},
+		{ID: "1", Name: "Facility1", Quantity: 10, CreatedAt: now, UpdatedAt: now},
+		{ID: "2", Name: "Facility2", Quantity: 15, CreatedAt: now, UpdatedAt: now},
 	}
 	expectedPaging := model.Paging{
 		Page:        page,
@@ -127,8 +128,8 @@ func (suite *FasilitiesRepositoryTestSuite) TestList_Success() {
 	}
 
 	rows := sqlmock.NewRows([]string{"id", "name", "quantity", "created_at", "updated_at"}).
-		AddRow("1", "Facility1", 10, time.Now(), time.Now()).
-		AddRow("2", "Facility2", 15, time.Now(), time.Now())
+		AddRow("1", "Facility1", 10, now, now).
+		AddRow("2", "Facility2", 15, now, now)
 
 	suite.mockSql.ExpectQuery(`SELECT`).
 		WithArgs(size, (page-1)*size).
