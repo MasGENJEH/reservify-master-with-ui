@@ -176,9 +176,10 @@ func (suite *EmployeeRepositoryTestSuite) TestUpdateEmployee_Fail() {
 func (suite *EmployeeRepositoryTestSuite) TestList_Success() {
 	page := 1
 	size := 10
+	now := time.Now()
 	expectEmployee := []entity.Employee{
-		{ID: "1", Name: "John Doe", Username: "johndoe123", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: time.Now(), UpdatedAt: time.Now()},
-		{ID: "2", Name: "John", Username: "johndoe", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+		{ID: "1", Name: "John Doe", Username: "johndoe123", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: now, UpdatedAt: now},
+		{ID: "2", Name: "John", Username: "johndoe", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: now, UpdatedAt: now},
 	}
 	expectedPaging := model.Paging{
 		Page:        page,
@@ -188,8 +189,8 @@ func (suite *EmployeeRepositoryTestSuite) TestList_Success() {
 	}
 
 	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role", "division", "position", "contact", "created_at", "updated_at"}).
-		AddRow("1", "John Doe", "johndoe123", "abc5dasar", "Admin", "PM", "Manager", "62654398564", time.Now(), time.Now()).
-		AddRow("2", "John", "johndoe", "abc5dasar", "Admin", "PM", "Manager", "62654398564", time.Now(), time.Now())
+		AddRow("1", "John Doe", "johndoe123", "abc5dasar", "Admin", "PM", "Manager", "62654398564", now, now).
+		AddRow("2", "John", "johndoe", "abc5dasar", "Admin", "PM", "Manager", "62654398564", now, now)
 
 	suite.mockSql.ExpectQuery(`SELECT`).
 		WithArgs(size, (page-1)*size).
