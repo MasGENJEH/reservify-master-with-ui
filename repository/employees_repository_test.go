@@ -43,26 +43,6 @@ func (suite *EmployeeRepositoryTestSuite) SetupTest() {
 	suite.repo = NewEmployeeRepository(suite.mockDb)
 }
 
-func (suite *EmployeeRepositoryTestSuite) TestGetEmployeeByID_success() {
-
-	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role", "division", "position", "contact", "created_at", "updated_at"}).AddRow(expectEmployee.ID, expectEmployee.Name, expectEmployee.Username, expectEmployee.Password, expectEmployee.Role, expectEmployee.Division, expectEmployee.Position, expectEmployee.Contact, expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
-
-	suite.mockSql.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, username, password, role, division, position, contact, created_at, updated_at FROM employees WHERE id = $1`)).WithArgs(expectEmployee.ID).WillReturnRows(rows)
-
-	_, actualError := suite.repo.GetEmployeesByID(expectEmployee.ID)
-	assert.Nil(suite.T(), actualError)
-	assert.NoError(suite.T(), actualError)
-}
-func (suite *EmployeeRepositoryTestSuite) TestGetEmployeeByUsername_success() {
-	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role", "division", "position", "contact", "created_at", "updated_at"}).AddRow(expectEmployee.ID, expectEmployee.Name, expectEmployee.Username, expectEmployee.Password, expectEmployee.Role, expectEmployee.Division, expectEmployee.Position, expectEmployee.Contact, expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
-
-	suite.mockSql.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, username, password, role, division, position, contact, created_at, updated_at FROM employees WHERE username = $1`)).WithArgs(expectEmployee.Username).WillReturnRows(rows)
-
-	_, actualError := suite.repo.GetEmployeesByUsername(expectEmployee.Username)
-	assert.Nil(suite.T(), actualError)
-	assert.NoError(suite.T(), actualError)
-}
-
 func (suite *EmployeeRepositoryTestSuite) TestGetEmployeeById_Fail() {
 	suite.mockSql.ExpectQuery(`SELECT`).WillReturnError(fmt.Errorf("error"))
 
@@ -76,22 +56,6 @@ func (suite *EmployeeRepositoryTestSuite) TestGetEmployeeByUsername_Fail() {
 	_, err := suite.repo.GetEmployeesByUsername("12")
 	assert.NotNil(suite.T(), err)
 	assert.Error(suite.T(), err)
-}
-
-func (suite *EmployeeRepositoryTestSuite) TestCreateEmployee_success() {
-	rows := sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(expectEmployee.ID, expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
-
-	suite.mockSql.ExpectQuery(regexp.QuoteMeta(config.InsertEmployee)).WithArgs(
-		expectEmployee.Name,
-		expectEmployee.Username,
-		expectEmployee.Password,
-		expectEmployee.Role,
-		expectEmployee.Division,
-		expectEmployee.Position,
-		expectEmployee.Contact).WillReturnRows(rows)
-
-	_, err := suite.repo.CreateEmployee(expectEmployee)
-	suite.NoError(err)
 }
 
 func (suite *EmployeeRepositoryTestSuite) TestCreateEmployee_Fail() {
@@ -110,21 +74,6 @@ func (suite *EmployeeRepositoryTestSuite) TestCreateEmployee_Fail() {
 	suite.Error(err)
 }
 
-func (suite *EmployeeRepositoryTestSuite) TestGetUsernameForLogin_Success() {
-	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role"}).AddRow(
-		expectEmployee.ID,
-		expectEmployee.Name,
-		expectEmployee.Username,
-		expectEmployee.Password,
-		expectEmployee.Role)
-
-	suite.mockSql.ExpectQuery(regexp.QuoteMeta(config.SelectEmployeeForLogin)).WithArgs(expectEmployee.Username, expectEmployee.Password).WillReturnRows(rows)
-
-	_, actualError := suite.repo.GetEmployeesByUsernameForLogin(expectEmployee.Username, expectEmployee.Password)
-	assert.Nil(suite.T(), actualError)
-	assert.NoError(suite.T(), actualError)
-}
-
 func (suite *EmployeeRepositoryTestSuite) TestGetUsernameForLogin_Fail() {
 	rows := sqlmock.NewRows([]string{"id", "name", "username", "password"}).AddRow(
 		expectEmployee.ID,
@@ -137,23 +86,6 @@ func (suite *EmployeeRepositoryTestSuite) TestGetUsernameForLogin_Fail() {
 	_, actualError := suite.repo.GetEmployeesByUsernameForLogin(expectEmployee.Username, expectEmployee.Password)
 	assert.NotNil(suite.T(), actualError)
 	assert.Error(suite.T(), actualError)
-}
-
-func (suite *EmployeeRepositoryTestSuite) TestUpdateEmployee_success() {
-	rows := sqlmock.NewRows([]string{"created_at", "updated_at"}).AddRow(expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
-
-	suite.mockSql.ExpectQuery(regexp.QuoteMeta(config.UpdateEmployee)).WithArgs(
-		expectEmployee.Name,
-		expectEmployee.Username,
-		expectEmployee.Password,
-		expectEmployee.Role,
-		expectEmployee.Division,
-		expectEmployee.Position,
-		expectEmployee.Contact,
-		expectEmployee.ID).WillReturnRows(rows)
-
-	_, err := suite.repo.UpdateEmployee(expectEmployee)
-	suite.NoError(err)
 }
 
 func (suite *EmployeeRepositoryTestSuite) TestUpdateEmployee_Fail() {
@@ -171,38 +103,6 @@ func (suite *EmployeeRepositoryTestSuite) TestUpdateEmployee_Fail() {
 
 	_, err := suite.repo.UpdateEmployee(expectEmployee)
 	suite.Error(err)
-}
-
-func (suite *EmployeeRepositoryTestSuite) TestList_Success() {
-	page := 1
-	size := 10
-	now := time.Now()
-	expectEmployee := []entity.Employee{
-		{ID: "1", Name: "John Doe", Username: "johndoe123", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: now, UpdatedAt: now},
-		{ID: "2", Name: "John", Username: "johndoe", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: now, UpdatedAt: now},
-	}
-	expectedPaging := model.Paging{
-		Page:        page,
-		RowsPerPage: size,
-		TotalRows:   2,
-		TotalPages:  1,
-	}
-
-	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role", "division", "position", "contact", "created_at", "updated_at"}).
-		AddRow("1", "John Doe", "johndoe123", "abc5dasar", "Admin", "PM", "Manager", "62654398564", now, now).
-		AddRow("2", "John", "johndoe", "abc5dasar", "Admin", "PM", "Manager", "62654398564", now, now)
-
-	suite.mockSql.ExpectQuery(`SELECT`).
-		WithArgs(size, (page-1)*size).
-		WillReturnRows(rows)
-
-	suite.mockSql.ExpectQuery(`SELECT`).
-		WillReturnRows(sqlmock.NewRows([]string{"total_rows"}).AddRow(2))
-
-	employees, paging, err := suite.repo.List(page, size)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), expectEmployee, employees)
-	assert.Equal(suite.T(), expectedPaging, paging)
 }
 
 func (suite *EmployeeRepositoryTestSuite) TestScanEmployee_Fail() {
@@ -245,6 +145,106 @@ func (suite *EmployeeRepositoryTestSuite) TestList_Fail() {
 	_, _, err := suite.repo.List(page, size)
 	assert.NotNil(suite.T(), err)
 	assert.Error(suite.T(), err)
+}
+
+func (suite *EmployeeRepositoryTestSuite) TestGetEmployeeByID_success() {
+
+	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role", "division", "position", "contact", "created_at", "updated_at"}).AddRow(expectEmployee.ID, expectEmployee.Name, expectEmployee.Username, expectEmployee.Password, expectEmployee.Role, expectEmployee.Division, expectEmployee.Position, expectEmployee.Contact, expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
+
+	suite.mockSql.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, username, password, role, division, position, contact, created_at, updated_at FROM employees WHERE id = $1`)).WithArgs(expectEmployee.ID).WillReturnRows(rows)
+
+	_, actualError := suite.repo.GetEmployeesByID(expectEmployee.ID)
+	assert.Nil(suite.T(), actualError)
+	assert.NoError(suite.T(), actualError)
+}
+func (suite *EmployeeRepositoryTestSuite) TestGetEmployeeByUsername_success() {
+	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role", "division", "position", "contact", "created_at", "updated_at"}).AddRow(expectEmployee.ID, expectEmployee.Name, expectEmployee.Username, expectEmployee.Password, expectEmployee.Role, expectEmployee.Division, expectEmployee.Position, expectEmployee.Contact, expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
+
+	suite.mockSql.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, username, password, role, division, position, contact, created_at, updated_at FROM employees WHERE username = $1`)).WithArgs(expectEmployee.Username).WillReturnRows(rows)
+
+	_, actualError := suite.repo.GetEmployeesByUsername(expectEmployee.Username)
+	assert.Nil(suite.T(), actualError)
+	assert.NoError(suite.T(), actualError)
+}
+
+func (suite *EmployeeRepositoryTestSuite) TestCreateEmployee_success() {
+	rows := sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(expectEmployee.ID, expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
+
+	suite.mockSql.ExpectQuery(regexp.QuoteMeta(config.InsertEmployee)).WithArgs(
+		expectEmployee.Name,
+		expectEmployee.Username,
+		expectEmployee.Password,
+		expectEmployee.Role,
+		expectEmployee.Division,
+		expectEmployee.Position,
+		expectEmployee.Contact).WillReturnRows(rows)
+
+	_, err := suite.repo.CreateEmployee(expectEmployee)
+	suite.NoError(err)
+}
+
+func (suite *EmployeeRepositoryTestSuite) TestGetUsernameForLogin_Success() {
+	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role"}).AddRow(
+		expectEmployee.ID,
+		expectEmployee.Name,
+		expectEmployee.Username,
+		expectEmployee.Password,
+		expectEmployee.Role)
+
+	suite.mockSql.ExpectQuery(regexp.QuoteMeta(config.SelectEmployeeForLogin)).WithArgs(expectEmployee.Username, expectEmployee.Password).WillReturnRows(rows)
+
+	_, actualError := suite.repo.GetEmployeesByUsernameForLogin(expectEmployee.Username, expectEmployee.Password)
+	assert.Nil(suite.T(), actualError)
+	assert.NoError(suite.T(), actualError)
+}
+
+func (suite *EmployeeRepositoryTestSuite) TestList_Success() {
+	page := 1
+	size := 10
+	now := time.Now()
+	expectEmployee := []entity.Employee{
+		{ID: "1", Name: "John Doe", Username: "johndoe123", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: now, UpdatedAt: now},
+		{ID: "2", Name: "John", Username: "johndoe", Password: "abc5dasar", Role: "Admin", Division: "PM", Position: "Manager", Contact: "62654398564", CreatedAt: now, UpdatedAt: now},
+	}
+	expectedPaging := model.Paging{
+		Page:        page,
+		RowsPerPage: size,
+		TotalRows:   2,
+		TotalPages:  1,
+	}
+
+	rows := sqlmock.NewRows([]string{"id", "name", "username", "password", "role", "division", "position", "contact", "created_at", "updated_at"}).
+		AddRow("1", "John Doe", "johndoe123", "abc5dasar", "Admin", "PM", "Manager", "62654398564", now, now).
+		AddRow("2", "John", "johndoe", "abc5dasar", "Admin", "PM", "Manager", "62654398564", now, now)
+
+	suite.mockSql.ExpectQuery(`SELECT`).
+		WithArgs(size, (page-1)*size).
+		WillReturnRows(rows)
+
+	suite.mockSql.ExpectQuery(`SELECT`).
+		WillReturnRows(sqlmock.NewRows([]string{"total_rows"}).AddRow(2))
+
+	employees, paging, err := suite.repo.List(page, size)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectEmployee, employees)
+	assert.Equal(suite.T(), expectedPaging, paging)
+}
+
+func (suite *EmployeeRepositoryTestSuite) TestUpdateEmployee_success() {
+	rows := sqlmock.NewRows([]string{"created_at", "updated_at"}).AddRow(expectEmployee.CreatedAt, expectEmployee.UpdatedAt)
+
+	suite.mockSql.ExpectQuery(regexp.QuoteMeta(config.UpdateEmployee)).WithArgs(
+		expectEmployee.Name,
+		expectEmployee.Username,
+		expectEmployee.Password,
+		expectEmployee.Role,
+		expectEmployee.Division,
+		expectEmployee.Position,
+		expectEmployee.Contact,
+		expectEmployee.ID).WillReturnRows(rows)
+
+	_, err := suite.repo.UpdateEmployee(expectEmployee)
+	suite.NoError(err)
 }
 
 func (suite *EmployeeRepositoryTestSuite) TestList_ScanTotalRows() {
