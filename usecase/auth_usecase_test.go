@@ -73,7 +73,6 @@ func (suite *AuthUseCaseTestSuite) TestLogin_Success() {
 	assert.Nil(suite.T(), err)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), mockAuthResponse, actual)
-	assert.Fail(suite.T(), "UJI SENGAJA DIGAGALKAN UNTUK VALIDASI CI") // Intentional failure for CI
 }
 
 func (suite *AuthUseCaseTestSuite) TestLogin_Fail() {
